@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Newton's Laws — Mousetrap Car Lab</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; background: #F0F4F8; color: #1E293B; }
+
+  .header {
+    background: #1B2A4A;
+    color: white;
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .header h1 { font-size: 20px; font-weight: 700; }
+  .header .badge {
+    background: #0D9488;
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 20px;
+    letter-spacing: 0.5px;
+  }
+
+  .tab-bar {
+    display: flex;
+    background: #1B2A4A;
+    border-top: 1px solid #243656;
+    overflow-x: auto;
+  }
+  .tab-bar button {
+    background: none;
+    border: none;
+    color: #94A3B8;
+    padding: 10px 20px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s;
+  }
+  .tab-bar button.active {
+    color: white;
+    border-bottom-color: #0D9488;
+  }
+  .tab-bar button:hover:not(.active) { color: #CBD5E1; }
+
+  .content { max-width: 960px; margin: 0 auto; padding: 20px 16px; }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* ── Section title ── */
+  .section-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: #1B2A4A;
+    margin-bottom: 4px;
+  }
+  .section-sub {
+    font-size: 13px;
+    color: #64748B;
+    margin-bottom: 20px;
+  }
+
+  /* ── Law cards ── */
+  .law-card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  }
+  .law-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .law-num {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; font-weight: 700; color: white;
+    flex-shrink: 0;
+  }
+  .law-card h3 { font-size: 16px; font-weight: 700; color: #1B2A4A; }
+  .law-card .definition {
+    background: #E6F7F5;
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-size: 14px;
+    color: #134E4A;
+    margin-bottom: 12px;
+    line-height: 1.5;
+  }
+  .law-card .connection {
+    font-size: 13px;
+    color: #475569;
+    line-height: 1.6;
+  }
+  .law-card .connection strong { color: #1B2A4A; }
+
+  /* ── Sim canvas ── */
+  #sim-canvas {
+    width: 100%;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    display: block;
+    margin-bottom: 16px;
+  }
+
+  /* ── Controls ── */
+  .controls-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  @media (max-width: 520px) { .controls-grid { grid-template-columns: 1fr; } }
+
+  .control-card {
+    background: white;
+    border-radius: 10px;
+    padding: 14px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  }
+  .control-card label {
+    display: block;
+    font-size: 12px;
+    font-weight: 700;
+    color: #64748B;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+  }
+  .control-card .val {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1B2A4A;
+    margin-bottom: 6px;
+  }
+  .control-card .val span { font-size: 13px; color: #64748B; font-weight: 400; }
+  input[type=range] {
+    width: 100%;
+    accent-color: #0D9488;
+  }
+
+  .btn {
+    display: inline-block;
+    padding: 10px 22px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    border: none;
+    transition: opacity 0.15s;
+  }
+  .btn:hover { opacity: 0.85; }
+  .btn-primary { background: #0D9488; color: white; }
+  .btn-secondary { background: #1B2A4A; color: white; }
+  .btn-danger { background: #E24B4A; color: white; }
+  .btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+
+  /* ── Results ── */
+  .results-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  @media (max-width: 480px) { .results-grid { grid-template-columns: 1fr 1fr; } }
+  .result-card {
+    background: white;
+    border-radius: 10px;
+    padding: 12px;
+    text-align: center;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  }
+  .result-card .r-label { font-size: 11px; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+  .result-card .r-val { font-size: 22px; font-weight: 700; color: #1B2A4A; }
+  .result-card .r-unit { font-size: 11px; color: #94A3B8; }
+
+  /* ── Data table ── */
+  .data-table-wrap { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.08); margin-bottom: 16px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { background: #1B2A4A; color: white; padding: 10px 12px; text-align: left; font-size: 12px; }
+  td { padding: 9px 12px; border-bottom: 1px solid #F1F5F9; }
+  tr:last-child td { border-bottom: none; }
+  tr:nth-child(even) td { background: #F8FAFC; }
+  .highlight-row td { background: #E6F7F5 !important; font-weight: 700; color: #0D9488; }
+
+  /* ── Quiz ── */
+  .quiz-q {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 14px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  }
+  .quiz-q p { font-size: 14px; color: #1E293B; margin-bottom: 12px; line-height: 1.5; }
+  .quiz-q .q-num { font-size: 11px; font-weight: 700; color: #0D9488; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+  .choices { display: flex; flex-direction: column; gap: 8px; }
+  .choice-btn {
+    text-align: left;
+    background: #F8FAFC;
+    border: 2px solid #E2E8F0;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s;
+    color: #1E293B;
+  }
+  .choice-btn:hover:not(:disabled) { border-color: #0D9488; background: #E6F7F5; }
+  .choice-btn.correct { background: #D1FAE5; border-color: #059669; color: #065F46; }
+  .choice-btn.wrong { background: #FEE2E2; border-color: #DC2626; color: #7F1D1D; }
+  .feedback {
+    margin-top: 10px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    line-height: 1.5;
+    display: none;
+  }
+  .feedback.show { display: block; }
+  .feedback.ok { background: #D1FAE5; color: #065F46; }
+  .feedback.no { background: #FEE2E2; color: #7F1D1D; }
+
+  .score-banner {
+    background: #1B2A4A;
+    color: white;
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+    margin-bottom: 16px;
+    display: none;
+  }
+  .score-banner.show { display: block; }
+  .score-banner .big { font-size: 48px; font-weight: 700; color: #0D9488; }
+  .score-banner p { color: #CBD5E1; margin-top: 6px; }
+
+  /* ── Info box ── */
+  .info-box {
+    background: #FEF3C7;
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-size: 13px;
+    color: #78350F;
+    line-height: 1.5;
+    margin-bottom: 14px;
+  }
+  .info-box strong { color: #92400E; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>Newton's Laws &amp; the Mousetrap Car</h1>
+    <div style="font-size:12px;color:#94A3B8;margin-top:2px;">Middle School Physical Science · Grades 6–8</div>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+    <span class="badge">NGSS MS-PS2-1</span>
+    <span class="badge">NGSS MS-PS2-2</span>
+  </div>
+</div>
+
+<div class="tab-bar">
+  <button class="active" onclick="showTab('laws')">📖 The Three Laws</button>
+  <button onclick="showTab('sim')">🚗 Car Simulator</button>
+  <button onclick="showTab('data')">📊 My Data</button>
+  <button onclick="showTab('quiz')">✏️ Check Your Knowledge</button>
+</div>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- TAB 1: THE THREE LAWS -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div class="content">
+<div id="tab-laws" class="panel active">
+  <div class="section-title">Newton's Three Laws of Motion</div>
+  <div class="section-sub">Read each law, then find its connection to your mousetrap car.</div>
+
+  <div class="law-card">
+    <div class="law-header">
+      <div class="law-num" style="background:#1B2A4A;">1</div>
+      <h3>First Law — The Law of Inertia</h3>
+    </div>
+    <div class="definition">
+      An object at rest stays at rest, and an object in motion stays in motion at the same speed and in the same direction — <strong>unless acted on by an unbalanced force.</strong>
+    </div>
+    <div class="connection">
+      <strong>🪤 Mousetrap car connection:</strong> Before the spring releases, the car sits perfectly still. It has <em>inertia at rest</em> — it won't move until the spring provides an unbalanced force. After the spring finishes pulling, the car keeps rolling (inertia in motion) until <em>friction</em> — an unbalanced force — gradually stops it.
+    </div>
+  </div>
+
+  <div class="law-card">
+    <div class="law-header">
+      <div class="law-num" style="background:#0D9488;">2</div>
+      <h3>Second Law — F = ma</h3>
+    </div>
+    <div class="definition">
+      The acceleration of an object depends on the <strong>net force</strong> acting on it and its <strong>mass</strong>: <strong>F = m × a</strong>
+    </div>
+    <div class="connection">
+      <strong>🪤 Mousetrap car connection:</strong> The mousetrap spring provides the force (F). The car's mass is m. A stronger spring → more force → more acceleration. A heavier car → more mass → less acceleration for the same force. This is exactly what you'll test in the simulator!
+      <br><br>
+      <strong>Try it:</strong> If your car has a mass of 0.15 kg and accelerates at 2 m/s², the net force = 0.15 × 2 = <strong>0.30 N</strong>.
+    </div>
+  </div>
+
+  <div class="law-card">
+    <div class="law-header">
+      <div class="law-num" style="background:#F59E0B;">3</div>
+      <h3>Third Law — Action &amp; Reaction</h3>
+    </div>
+    <div class="definition">
+      For every <strong>action force</strong>, there is an <strong>equal and opposite reaction force</strong>. Forces always come in pairs — acting on <em>different</em> objects.
+    </div>
+    <div class="connection">
+      <strong>🪤 Mousetrap car connection:</strong> When the spring releases, it pushes <em>backward</em> on the axle string (action). The string pulls <em>forward</em> on the spring arm (reaction) — propelling the car. The forces are equal and opposite, but they act on <em>different objects</em>, so they don't cancel out.
+      <br><br>
+      <strong>Real-world examples:</strong> Rocket engines push exhaust gas backward → the rocket accelerates forward. A swimmer pushes water backward → the swimmer moves forward.
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- TAB 2: SIMULATOR -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div id="tab-sim" class="panel">
+  <div class="section-title">Mousetrap Car Simulator</div>
+  <div class="section-sub">Adjust the controls and launch the car. Which variables change how far it travels?</div>
+
+  <canvas id="sim-canvas" height="220"></canvas>
+
+  <div class="controls-grid">
+    <div class="control-card">
+      <label>Spring Force</label>
+      <div class="val" id="val-force">3.0 <span>N</span></div>
+      <input type="range" id="sl-force" min="1" max="6" step="0.5" value="3" oninput="updateControls()">
+      <div style="font-size:11px;color:#94A3B8;margin-top:4px;">← weaker spring · stronger spring →</div>
+    </div>
+    <div class="control-card">
+      <label>Car Mass</label>
+      <div class="val" id="val-mass">0.15 <span>kg</span></div>
+      <input type="range" id="sl-mass" min="0.05" max="0.40" step="0.05" value="0.15" oninput="updateControls()">
+      <div style="font-size:11px;color:#94A3B8;margin-top:4px;">← lighter car · heavier car →</div>
+    </div>
+    <div class="control-card">
+      <label>Friction Level</label>
+      <div class="val" id="val-friction">Medium <span></span></div>
+      <input type="range" id="sl-friction" min="1" max="3" step="1" value="2" oninput="updateControls()">
+      <div style="font-size:11px;color:#94A3B8;margin-top:4px;">← low · medium · high →</div>
+    </div>
+    <div class="control-card">
+      <label>Calculated Acceleration</label>
+      <div class="val" id="val-accel">20.0 <span>m/s²</span></div>
+      <div style="font-size:12px;color:#64748B;margin-top:4px;">Using F = ma: a = F ÷ m</div>
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-primary" id="launch-btn" onclick="launchCar()">🚀 Launch Car</button>
+    <button class="btn btn-secondary" onclick="resetSim()">↺ Reset</button>
+    <button class="btn btn-danger" onclick="recordRun()">+ Record This Run</button>
+  </div>
+
+  <div class="results-grid">
+    <div class="result-card">
+      <div class="r-label">Distance</div>
+      <div class="r-val" id="r-dist">—</div>
+      <div class="r-unit">cm</div>
+    </div>
+    <div class="result-card">
+      <div class="r-label">Peak Speed</div>
+      <div class="r-val" id="r-speed">—</div>
+      <div class="r-unit">m/s</div>
+    </div>
+    <div class="result-card">
+      <div class="r-label">Net Force</div>
+      <div class="r-val" id="r-force">—</div>
+      <div class="r-unit">N</div>
+    </div>
+  </div>
+
+  <div class="info-box">
+    <strong>💡 Investigation Challenge:</strong> Keep the spring force the same and change only the car's mass. What happens to the distance? This directly tests <strong>NGSS MS-PS2-2</strong> — how mass affects motion when force is held constant.
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- TAB 3: DATA TABLE -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div id="tab-data" class="panel">
+  <div class="section-title">My Lab Data</div>
+  <div class="section-sub">Recorded runs appear here. Run at least 3 trials, then answer the analysis questions below.</div>
+
+  <div class="data-table-wrap">
+    <table id="data-table">
+      <thead>
+        <tr>
+          <th>Run #</th>
+          <th>Spring Force (N)</th>
+          <th>Mass (kg)</th>
+          <th>Friction</th>
+          <th>Accel. (m/s²)</th>
+          <th>Distance (cm)</th>
+        </tr>
+      </thead>
+      <tbody id="data-tbody">
+        <tr><td colspan="6" style="text-align:center;color:#94A3B8;padding:24px;">No runs recorded yet. Go to the Simulator tab and record some runs!</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div id="avg-row" style="display:none;">
+    <div class="result-card" style="max-width:200px;margin-bottom:16px;">
+      <div class="r-label">Average Distance</div>
+      <div class="r-val" id="avg-dist">—</div>
+      <div class="r-unit">cm</div>
+    </div>
+  </div>
+
+  <div class="law-card">
+    <h3 style="margin-bottom:12px;">📝 Analysis Questions</h3>
+    <p style="font-size:14px;color:#475569;line-height:1.6;margin-bottom:8px;"><strong>1.</strong> When you increased the car's mass (keeping force the same), what happened to the distance? Which Newton's Law explains this?</p>
+    <p style="font-size:14px;color:#475569;line-height:1.6;margin-bottom:8px;"><strong>2.</strong> When you increased the spring force (keeping mass the same), what happened to the distance? Write the F = ma equation using your actual values from one run.</p>
+    <p style="font-size:14px;color:#475569;line-height:1.6;"><strong>3.</strong> Name the action-reaction pair present when the spring releases. On which object does each force act?</p>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-danger" onclick="clearData()">Clear All Data</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- TAB 4: QUIZ -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div id="tab-quiz" class="panel">
+  <div class="section-title">Check Your Knowledge</div>
+  <div class="section-sub">Answer each question, then read the explanation. These are the same types of questions on your assessment!</div>
+
+  <div class="score-banner" id="score-banner">
+    <div class="big" id="score-text">0/5</div>
+    <p id="score-msg"></p>
+    <button class="btn btn-primary" style="margin-top:12px;" onclick="resetQuiz()">Try Again</button>
+  </div>
+
+  <div id="quiz-container"></div>
+
+  <button class="btn btn-primary" id="submit-quiz" onclick="submitQuiz()" style="display:none;">Submit Quiz</button>
+</div>
+
+</div><!-- /content -->
+
+<script>
+// ── STATE ────────────────────────────────────────────────
+let runs = [];
+let animFrame = null;
+let carX = 0;
+let carRunning = false;
+let carDist = 0;
+let carSpeed = 0;
+let simDone = false;
+
+// ── TABS ─────────────────────────────────────────────────
+function showTab(name) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-bar button').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  event.target.classList.add('active');
+  if (name === 'sim') drawSim(0, false);
+}
+
+// ── CONTROLS ─────────────────────────────────────────────
+function updateControls() {
+  const f = parseFloat(document.getElementById('sl-force').value);
+  const m = parseFloat(document.getElementById('sl-mass').value);
+  const fr = parseInt(document.getElementById('sl-friction').value);
+  const a = (f / m).toFixed(1);
+  document.getElementById('val-force').innerHTML = f.toFixed(1) + ' <span>N</span>';
+  document.getElementById('val-mass').innerHTML = m.toFixed(2) + ' <span>kg</span>';
+  const frLabel = ['', 'Low (smooth floor)', 'Medium (tile)', 'High (carpet)'][fr];
+  document.getElementById('val-friction').innerHTML = frLabel;
+  document.getElementById('val-accel').innerHTML = a + ' <span>m/s²</span>';
+}
+
+function getParams() {
+  return {
+    force: parseFloat(document.getElementById('sl-force').value),
+    mass: parseFloat(document.getElementById('sl-mass').value),
+    friction: parseInt(document.getElementById('sl-friction').value)
+  };
+}
+
+// ── SIMULATION ───────────────────────────────────────────
+const CANVAS_W = 900;
+const CANVAS_H = 220;
+const GROUND_Y = 160;
+const CAR_START = 60;
+const FRICTION_COEFF = [0, 0.018, 0.032, 0.055];
+
+function getCanvas() { return document.getElementById('sim-canvas'); }
+
+function drawSim(carXPx, running) {
+  const cv = getCanvas();
+  const dpr = window.devicePixelRatio || 1;
+  if (cv.width !== Math.round(cv.offsetWidth * dpr)) {
+    cv.width = Math.round(cv.offsetWidth * dpr);
+    cv.height = Math.round(CANVAS_H * dpr);
+    cv.style.height = CANVAS_H + 'px';
+  }
+  const ctx = cv.getContext('2d');
+  const W = cv.width, H = cv.height;
+  const sc = W / CANVAS_W;
+
+  ctx.clearRect(0, 0, W, H);
+
+  // Sky
+  ctx.fillStyle = '#EEF2FF';
+  ctx.fillRect(0, 0, W, H);
+
+  // Ground
+  ctx.fillStyle = '#CBD5E1';
+  ctx.fillRect(0, GROUND_Y * sc, W, H);
+  ctx.fillStyle = '#94A3B8';
+  ctx.fillRect(0, GROUND_Y * sc, W, 2 * sc);
+
+  // Distance markers
+  ctx.font = `${Math.round(10 * sc)}px Arial`;
+  ctx.fillStyle = '#94A3B8';
+  for (let i = 1; i <= 8; i++) {
+    const mx = (CAR_START + i * 100) * sc;
+    if (mx > W) break;
+    ctx.fillStyle = '#CBD5E1';
+    ctx.fillRect(mx, (GROUND_Y - 8) * sc, 1 * sc, 8 * sc);
+    ctx.fillStyle = '#94A3B8';
+    ctx.textAlign = 'center';
+    ctx.fillText((i * 100) + 'cm', mx, (GROUND_Y + 14) * sc);
+  }
+
+  // Draw car at carXPx (pixels in 900-wide space)
+  const cx = (CAR_START + carXPx) * sc;
+  const cy = GROUND_Y * sc;
+  const cw = 60 * sc;
+  const ch = 28 * sc;
+  const wr = 10 * sc;
+
+  // Body
+  ctx.fillStyle = '#1B2A4A';
+  ctx.beginPath();
+  ctx.roundRect(cx - cw/2, cy - ch - 2*sc, cw, ch, 6 * sc);
+  ctx.fill();
+
+  // Mousetrap spring (arm)
+  if (!simDone || carXPx < 2) {
+    const armAngle = carXPx < 2 ? -0.4 : 0.3;
+    ctx.strokeStyle = '#F59E0B';
+    ctx.lineWidth = 3 * sc;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - ch - 2*sc);
+    ctx.lineTo(cx + Math.cos(armAngle) * 22 * sc, cy - ch - 2*sc - Math.sin(armAngle) * 22 * sc);
+    ctx.stroke();
+  }
+
+  // Teal accent stripe on car
+  ctx.fillStyle = '#0D9488';
+  ctx.fillRect(cx - cw/2 + 4*sc, cy - ch - 2*sc + 6*sc, cw - 8*sc, 4*sc);
+
+  // Wheels
+  [cx - cw/2 + wr, cx + cw/2 - wr].forEach(wx => {
+    ctx.fillStyle = '#374151';
+    ctx.beginPath();
+    ctx.arc(wx, cy, wr, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#9CA3AF';
+    ctx.beginPath();
+    ctx.arc(wx, cy, wr * 0.45, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // Distance label
+  if (carXPx > 2) {
+    ctx.fillStyle = '#0D9488';
+    ctx.font = `bold ${Math.round(13 * sc)}px Arial`;
+    ctx.textAlign = 'center';
+    ctx.fillText(Math.round(carXPx) + ' cm', cx, (GROUND_Y - ch - 12) * sc);
+  }
+
+  // "LAUNCH" hint
+  if (!running && carXPx < 2) {
+    ctx.fillStyle = '#CBD5E1';
+    ctx.font = `${Math.round(12 * sc)}px Arial`;
+    ctx.textAlign = 'left';
+    ctx.fillText('← Press Launch Car to run the simulation', (CAR_START + 20) * sc, 30 * sc);
+  }
+}
+
+function launchCar() {
+  if (carRunning) return;
+  const p = getParams();
+  const accel = p.force / p.mass;
+  const frCoeff = FRICTION_COEFF[p.friction];
+
+  carX = 0;
+  carSpeed = 0;
+  carDist = 0;
+  simDone = false;
+  carRunning = true;
+  document.getElementById('launch-btn').disabled = true;
+
+  // Physics: spring phase (0–0.3s) then coast
+  let t = 0;
+  const dt = 0.016;
+  const springDuration = 0.3;
+  let peakSpeed = 0;
+
+  const step = () => {
+    t += dt;
+
+    if (t < springDuration) {
+      // Acceleration phase
+      const progress = t / springDuration;
+      const netAccel = accel * (1 - progress * 0.4);
+      carSpeed += netAccel * dt;
+    } else {
+      // Coasting — friction decelerates
+      carSpeed -= frCoeff * 9.8 * dt * 60;
+    }
+
+    if (carSpeed > peakSpeed) peakSpeed = carSpeed;
+    if (carSpeed < 0) carSpeed = 0;
+
+    carDist += carSpeed * dt * 80;
+    carX = carDist;
+
+    drawSim(Math.min(carX, 780), true);
+
+    if (carSpeed > 0 && carX < 780) {
+      animFrame = requestAnimationFrame(step);
+    } else {
+      carRunning = false;
+      simDone = true;
+      document.getElementById('launch-btn').disabled = false;
+      const finalDist = Math.round(Math.min(carX, 780));
+      document.getElementById('r-dist').textContent = finalDist;
+      document.getElementById('r-speed').textContent = peakSpeed.toFixed(2);
+      document.getElementById('r-force').textContent = p.force.toFixed(1);
+      drawSim(finalDist, false);
+    }
+  };
+  requestAnimationFrame(step);
+}
+
+function resetSim() {
+  if (animFrame) cancelAnimationFrame(animFrame);
+  carRunning = false;
+  simDone = false;
+  carX = 0; carSpeed = 0; carDist = 0;
+  document.getElementById('r-dist').textContent = '—';
+  document.getElementById('r-speed').textContent = '—';
+  document.getElementById('r-force').textContent = '—';
+  document.getElementById('launch-btn').disabled = false;
+  drawSim(0, false);
+}
+
+function recordRun() {
+  const distEl = document.getElementById('r-dist');
+  if (distEl.textContent === '—') { alert('Launch the car first!'); return; }
+  const p = getParams();
+  const a = (p.force / p.mass).toFixed(1);
+  const frLabel = ['', 'Low', 'Medium', 'High'][p.friction];
+  runs.push({
+    force: p.force.toFixed(1),
+    mass: p.mass.toFixed(2),
+    friction: frLabel,
+    accel: a,
+    dist: distEl.textContent
+  });
+  renderDataTable();
+}
+
+function renderDataTable() {
+  const tbody = document.getElementById('data-tbody');
+  if (runs.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#94A3B8;padding:24px;">No runs recorded yet.</td></tr>';
+    document.getElementById('avg-row').style.display = 'none';
+    return;
+  }
+  let html = '';
+  runs.forEach((r, i) => {
+    html += `<tr><td>${i + 1}</td><td>${r.force}</td><td>${r.mass}</td><td>${r.friction}</td><td>${r.accel}</td><td>${r.dist}</td></tr>`;
+  });
+  const avg = Math.round(runs.reduce((s, r) => s + parseInt(r.dist), 0) / runs.length);
+  html += `<tr class="highlight-row"><td colspan="5" style="text-align:right;font-weight:700;">Average Distance:</td><td>${avg} cm</td></tr>`;
+  tbody.innerHTML = html;
+  document.getElementById('avg-dist').textContent = avg;
+  document.getElementById('avg-row').style.display = 'block';
+}
+
+function clearData() {
+  if (!confirm('Clear all recorded runs?')) return;
+  runs = [];
+  renderDataTable();
+}
+
+// ── QUIZ ─────────────────────────────────────────────────
+const QUESTIONS = [
+  {
+    q: "A mousetrap car sits perfectly still on the floor. Your partner gives it a push and it starts rolling. Which law explains why the car needed a push to start moving?",
+    choices: ["Newton's First Law — objects at rest stay at rest until an unbalanced force acts", "Newton's Second Law — F = ma", "Newton's Third Law — action and reaction", "The Law of Gravity"],
+    correct: 0,
+    explain: "Correct! Newton's First Law (inertia) explains why the car stays still — it resists any change in motion. The push is the unbalanced force that overcomes inertia."
+  },
+  {
+    q: "You have two identical mousetrap cars, but Car B has twice the mass of Car A. Both are launched with the same spring force. Which car accelerates more?",
+    choices: ["Car B, because it has more mass to push", "Car A, because it has less mass (F = ma, so a = F/m)", "Both cars accelerate equally, since the force is the same", "Car B, because heavier objects always go faster"],
+    correct: 1,
+    explain: "Correct! F = ma means a = F/m. If force is the same but mass doubles, acceleration is cut in half. Car A (less mass) has greater acceleration."
+  },
+  {
+    q: "When the mousetrap spring pushes on the axle string, the string pulls the car forward. Which Newton's Law describes this spring-string interaction?",
+    choices: ["First Law — inertia", "Second Law — F = ma", "Third Law — every action has an equal and opposite reaction", "Conservation of Energy"],
+    correct: 2,
+    explain: "Correct! Newton's Third Law! The spring pushes backward on the axle string (action), and the string pulls forward on the spring (reaction). Equal forces, opposite directions, on different objects."
+  },
+  {
+    q: "A mousetrap car has a mass of 0.20 kg. The spring provides a net force of 0.80 N. What is the car's acceleration?",
+    choices: ["0.16 m/s²", "0.25 m/s²", "4.0 m/s²", "1.6 m/s²"],
+    correct: 2,
+    explain: "Correct! Using F = ma, rearranged to a = F/m: a = 0.80 N ÷ 0.20 kg = 4.0 m/s²."
+  },
+  {
+    q: "After the spring finishes pulling, the car rolls for several meters before stopping. What force slows and stops the car?",
+    choices: ["The spring force pulling backward", "Gravity pulling straight down", "Friction between the wheels and the floor", "Inertia fighting the motion"],
+    correct: 2,
+    explain: "Correct! Friction is the unbalanced force that opposes motion and causes the car to decelerate. Without friction (imagine a frictionless surface), the car would keep rolling forever — that's Newton's First Law!"
+  }
+];
+
+let userAnswers = new Array(QUESTIONS.length).fill(null);
+let quizSubmitted = false;
+
+function buildQuiz() {
+  const container = document.getElementById('quiz-container');
+  container.innerHTML = '';
+  QUESTIONS.forEach((q, qi) => {
+    const div = document.createElement('div');
+    div.className = 'quiz-q';
+    div.innerHTML = `
+      <div class="q-num">Question ${qi + 1} of ${QUESTIONS.length}</div>
+      <p>${q.q}</p>
+      <div class="choices" id="choices-${qi}">
+        ${q.choices.map((c, ci) => `<button class="choice-btn" onclick="selectAnswer(${qi}, ${ci})" id="choice-${qi}-${ci}">${c}</button>`).join('')}
+      </div>
+      <div class="feedback" id="fb-${qi}"></div>
+    `;
+    container.appendChild(div);
+  });
+  document.getElementById('submit-quiz').style.display = 'inline-block';
+}
+
+function selectAnswer(qi, ci) {
+  if (quizSubmitted) return;
+  userAnswers[qi] = ci;
+  document.querySelectorAll(`#choices-${qi} .choice-btn`).forEach((b, i) => {
+    b.style.borderColor = i === ci ? '#0D9488' : '#E2E8F0';
+    b.style.background = i === ci ? '#E6F7F5' : '#F8FAFC';
+  });
+}
+
+function submitQuiz() {
+  if (userAnswers.some(a => a === null)) { alert('Please answer all questions before submitting.'); return; }
+  quizSubmitted = true;
+  let score = 0;
+  QUESTIONS.forEach((q, qi) => {
+    const ua = userAnswers[qi];
+    const correct = ua === q.correct;
+    if (correct) score++;
+    document.querySelectorAll(`#choices-${qi} .choice-btn`).forEach((b, ci) => {
+      b.disabled = true;
+      if (ci === q.correct) b.classList.add('correct');
+      else if (ci === ua && !correct) b.classList.add('wrong');
+    });
+    const fb = document.getElementById(`fb-${qi}`);
+    fb.textContent = correct ? '✅ ' + q.explain : '❌ Not quite. The correct answer is: "' + q.choices[q.correct] + '". ' + q.explain;
+    fb.className = 'feedback show ' + (correct ? 'ok' : 'no');
+  });
+  document.getElementById('submit-quiz').style.display = 'none';
+  const banner = document.getElementById('score-banner');
+  banner.classList.add('show');
+  document.getElementById('score-text').textContent = `${score}/${QUESTIONS.length}`;
+  const msgs = ['Keep studying — review the Three Laws tab and try again!', 'Good effort! Review the questions you missed.', 'Solid work! Check your mistakes and you\'ll nail the assessment.', 'Great job! You\'ve got a strong grasp of Newton\'s Laws.', 'Perfect score! You\'re ready for the assessment! 🎉'];
+  document.getElementById('score-msg').textContent = msgs[score];
+}
+
+function resetQuiz() {
+  quizSubmitted = false;
+  userAnswers = new Array(QUESTIONS.length).fill(null);
+  document.getElementById('score-banner').classList.remove('show');
+  buildQuiz();
+}
+
+// ── INIT ─────────────────────────────────────────────────
+window.addEventListener('load', () => {
+  updateControls();
+  setTimeout(() => drawSim(0, false), 100);
+  buildQuiz();
+});
+window.addEventListener('resize', () => { if (!carRunning) drawSim(carX, false); });
+</script>
+</body>
+</html>
